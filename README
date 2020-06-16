@@ -1,1 +1,5 @@
-GStreamer Tutorial Content
+GStreamer Tutorial Content for Jetson TX2 dev board
+Follows the basic tutorials from:
+https://gstreamer.freedesktop.org/documentation/tutorials/basic/index.html?gi-language=c
+
+Since this is on the Jetson TX2 some content in the tutorials had to be modified to work on the system. 
