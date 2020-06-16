@@ -4,6 +4,7 @@
 
 int main(int argc, char *argv[]) {
   GstElement *pipeline, *source, *sink, *filter, *converter;
+GstCaps *capsnvvidconv;
   GstBus *bus;
   GstMessage *msg;
   GstStateChangeReturn ret;
@@ -21,7 +22,13 @@ int main(int argc, char *argv[]) {
   filter = gst_element_factory_make ( "vertigotv", "filter");
 
 	/*videoconvert to get rid of negotiation error in between filter and sink. */
-  converter = gst_element_factory_make( "videoconvert", "converter");
+  converter = gst_element_factory_make( "nvvidconv", "converter");
+
+	  capsnvvidconv = gst_caps_from_string("video/x-raw(memory:NVMM), format=(string)NV12");
+  if(!capsnvvidconv) {
+    g_printerr ("Caps could not be created.\n");
+    return -1;
+}
 
   /* Create the empty pipeline */
 	/* All elements in GStreamer typically must be contained in a pipeline.*/
@@ -34,13 +41,28 @@ int main(int argc, char *argv[]) {
 
   /* Build the pipeline */
 	/* A pipeline is a particular type of bin, which the element used to contain the other elements. */
-  gst_bin_add_many (GST_BIN (pipeline), source, filter, converter, sink, NULL);
-	/* Link the source to the filter. Elements must be in the same bin in order to be linked. */
-  if (gst_element_link_many (source, filter, converter, sink, NULL) != TRUE) {
-    g_printerr ("Elements could not be linked.\n");
+  gst_bin_add_many (GST_BIN (pipeline), source,filter, converter, sink, NULL);
+	
+/* Link the source to the filter. Elements must be in the same bin in order to be linked. */
+  if (gst_element_link (source, filter) != TRUE) {
+    g_printerr ("Source and filter elements could not be linked.\n");
     gst_object_unref (pipeline);
     return -1;
   }
+  if (gst_element_link (filter, converter) != TRUE) {
+    g_printerr ("filter and converter elements could not be linked.\n");
+    gst_object_unref (pipeline);
+    return -1;
+  }
+
+
+  if (gst_element_link_filtered (converter, sink, capsnvvidconv) != TRUE ) {
+    g_printerr ("converter and sink elements link filtered failed.\n");
+    gst_object_unref (pipeline);
+    return -1;
+  }
+
+
 
   /* Modify the source's properties */
   g_object_set (source, "pattern", 1, NULL);
